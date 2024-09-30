@@ -1,0 +1,152 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+// Replace with your network credentials
+const char* ssid = "VITC-EVENT";
+const char* password = "Eve@$29!!09$";
+
+// Replace with your Twilio credentials
+const char* account_sid = "ACf2eecc9f80d453b1056ef9042fe5e3b7";
+const char* auth_token = "80c07c2a1f680b3205b01f9de2330342";
+const char* from_number = "+16078826044";
+const char* to_number = "+917358571004";
+
+#include <Keypad.h>
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27,16,2);
+
+#define ROW_NUM 4 // four rows
+#define COLUMN_NUM 4 // four columns
+
+char keys[ROW_NUM][COLUMN_NUM] = {
+  {'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'}
+};
+
+byte pin_rows[ROW_NUM] = {2,0,4,16}; // connect to the row pins
+byte pin_column[COLUMN_NUM] = {17,5,18,19}; // connect to the column pins
+
+Keypad keypad = Keypad(makeKeymap(keys), pin_rows, pin_column, ROW_NUM, COLUMN_NUM);
+
+void setup() {
+  Serial.begin(9600);
+  lcd.begin();
+  lcd.backlight();
+  Serial.begin(115200);
+  WiFi.begin(ssid, password);
+
+  Serial.print("Connecting to WiFi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("Connected!");
+}
+
+void loop() {
+  char key = keypad.getKey();
+  
+  if (key == '1'){
+    lcd.clear();
+    lcd.print("NEED WATER !");
+    Serial.println("N");
+  }
+  else if (key == '2'){
+    lcd.clear();
+    lcd.print("GIVE ME TABLETS ");
+    Serial.println("g");
+  }
+  else if( key== '3'){
+    lcd.clear(); 
+    lcd.print(" RESTROOM");
+    Serial.println("r");
+  }
+  else if(key == '4'){
+    lcd.clear();
+    lcd.print("I NEED REST ");
+    Serial.println("i");
+  }
+  else if(key == '5'){
+    lcd.clear();
+    lcd.print("I AM HUNGRY ");
+    Serial.println("h");
+
+  }
+  else if (key =='6'){
+    lcd.clear();
+    lcd.print("LIGHT ON ");
+    digitalWrite(12,HIGH);
+    Serial.println("l");
+  }
+    else if (key =='7'){
+    lcd.clear();
+    lcd.print("FAN ON");
+    digitalWrite(11,HIGH);
+    Serial.println("f");
+    
+  }
+  else if(key == 'A'){
+    lcd.clear();
+    lcd.print("EMERGENCY");
+    digitalWrite(13,HIGH);
+    Serial.println("e");
+
+  }
+  else if(key == 'B'){
+    lcd.clear();
+    lcd.print("RELAX");
+    digitalWrite(13,LOW);
+    
+
+  }
+    else if(key == 'C'){
+    lcd.clear();
+    lcd.print("FAN OFF");
+    digitalWrite(11,LOW);
+    
+
+  }
+    else if(key == 'D'){
+    lcd.clear();
+    lcd.print("LIGHT OFF");
+    digitalWrite(12,LOW);
+    
+
+  }
+  else if(key == '*') {
+    lcd.clear();
+    makeCall();
+  }
+  
+}
+
+void makeCall() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    String url = "https://api.twilio.com/2010-04-01/Accounts/" + String(account_sid) + "/Calls.json";
+    String data = "To=" + String(to_number) + "&From=" + String(from_number) + "&Url=http://demo.twilio.com/docs/voice.xml";
+
+    http.begin(url);
+    http.setAuthorization(account_sid, auth_token);
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+
+    int httpResponseCode = http.POST(data);
+
+    if (httpResponseCode > 0) {
+      String response = http.getString();
+      Serial.println("Call initiated successfully!");
+      Serial.println(response);
+    } else {
+      Serial.print("Error on sending POST: ");
+      Serial.println(httpResponseCode);
+    }
+
+    http.end();
+  } else {
+    Serial.println("WiFi not connected");
+  }
+}
